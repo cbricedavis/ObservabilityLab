@@ -669,6 +669,16 @@ function cmdLint() {
     for (const h of trackedHits) errors.push(`forbidden tracked file: ${h} — git rm --cached it and rotate any exposed secret`);
   }
 
+  // BLUEPRINT §6.11: an active pre-commit hook that isn't the tracked one.
+  const HOOK_MANAGER_MARKERS = ['.husky', '.pre-commit-config.yaml', 'lefthook.yml', 'lefthook.yaml', '.overcommit.yml'];
+  const hasHookManager = HOOK_MANAGER_MARKERS.some((m) => fs.existsSync(path.join(repoRoot, m)));
+  if (!hasHookManager) {
+    const hooksPath = L.git(['config', 'core.hooksPath'], { cwd: repoRoot }).stdout.trim();
+    if (hooksPath !== '.githooks') {
+      errors.push(`core.hooksPath is ${hooksPath ? `"${hooksPath}"` : 'unset'}, not ".githooks" — run "node .agents/bin/agents.mjs setup" (no hook manager registered).`);
+    }
+  }
+
   for (const e of errors) ok(`ERROR: ${e}`);
   for (const w of warnings) ok(`WARN: ${w}`);
   if (!errors.length && !warnings.length) ok('lint: clean.');
@@ -759,12 +769,11 @@ function cmdCiGuard(args) {
 
 // ---------------------------------------------------------------- setup ---
 function cmdSetup() {
-  const src = path.join(repoRoot, '.githooks', 'pre-commit');
-  const dst = path.join(commonDir, 'hooks', 'pre-commit');
-  fs.mkdirSync(path.dirname(dst), { recursive: true });
-  fs.copyFileSync(src, dst);
-  fs.chmodSync(dst, 0o755);
-  ok(`installed pre-commit guard at ${dst}`);
+  // Install by reference (BLUEPRINT.md §6.4), never by copying: a copy in
+  // .git/hooks/ silently goes stale when .githooks/pre-commit changes.
+  const r = L.git(['config', 'core.hooksPath', '.githooks'], { cwd: repoRoot });
+  if (r.status !== 0) die(`git config core.hooksPath failed:\n${r.stderr}`);
+  ok('set core.hooksPath = .githooks (idempotent; edits to .githooks/pre-commit take effect immediately, no re-install)');
 }
 
 // ---------------------------------------------------------------- dispatch ---

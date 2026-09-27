@@ -22,6 +22,10 @@ Older Done items rotate to `.agents/archive/TODO-done.md`.
 
 ## Next
 
+- [ ] **Run X1 (BLUEPRINT §9) with Codex and Claude in their real runtimes.**
+    Cross-agent smoke test: each agent claims/commits/finishes in its own
+    actual sandbox, not simulated by one agent running two processes. See
+    `.agents/blueprint/BLUEPRINT.md` §9 for the exact steps.
 - [ ] **Add project-specific forbidden-path patterns.** `.agents/forbidden-paths`
     has only generic secret/log patterns. Once Docker Compose, database data
     volumes, and/or an OTel Collector config (with vendor API keys) exist, add

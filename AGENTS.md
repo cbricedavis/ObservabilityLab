@@ -67,6 +67,11 @@ everything below and for anything this file doesn't cover.
 topology — see §2). Once the product exists, `docker compose up --build` runs
 the whole platform locally; nothing in this framework runs it automatically.
 
+**Collaboration tooling runtime:** dependency-free Node, present on this Mac;
+chosen independently of the product stack (BLUEPRINT §4 option 3). This
+doesn't decide the product's own language/runtime — that's still open for
+ADR-001.
+
 **Never commit:** anything matching `.agents/forbidden-paths`. To protect a new
 kind of path, add a pattern there (see its header) — every guard reads that
 file.

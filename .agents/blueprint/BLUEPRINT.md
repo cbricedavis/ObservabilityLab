@@ -87,6 +87,12 @@ Determine, and write down for your final report:
 7. **Sensitive paths**, including any already tracked.
 8. **Long-lived resources** agents launch.
 9. **Existing ledgers** to migrate rather than duplicate.
+10. **Each agent's write access.** From each agent's actual runtime and
+    sandbox mode (not the implementer's), confirm it can run `git commit`
+    and create a directory inside `git rev-parse --git-common-dir`.
+    Single-machine claims and the lock live there (§6.1, §6.10); an agent
+    that can't write there can't claim. Record the result per agent. If an
+    agent can't be checked now, record that; X1 (§9) will check it.
 
 Ask the user only for what remains — usually the agent list, push policy,
 tier, and sensitive-path confirmation.
@@ -111,7 +117,14 @@ project doesn't already require:
 2. **POSIX `sh` for the hook** (reference in §6.4). Git for Windows runs hooks
    with its bundled `sh` and GNU grep. No bash-4 features (macOS ships 3.2);
    no `jq`, `python3`, or GNU-only flags.
-3. **No runtime (Tier 0/1 only).** Stop at Tier 1; agents perform operations
+3. **Single-machine only: a runtime present on the machine.** For
+   `shared-tree` or `worktrees`, a runtime that is already installed where
+   every agent runs (not required by the project) is acceptable if the user
+   confirms it. Use it dependency-free, without adding a manifest that
+   implies a product stack, and record the choice in `AGENTS.md` §1 so no
+   later agent "corrects" it. Not allowed for `clones`, where machines
+   differ.
+4. **No runtime (Tier 0/1 only).** Stop at Tier 1; agents perform operations
    by hand to §6–§7.
 
 If the project uses a hook manager, register the guard through it.
@@ -161,7 +174,10 @@ If the project uses a hook manager, register the guard through it.
    after the user approves a push," and empty otherwise; `{{FINISH_NOTE}}` is,
    for single-machine at Tier 2, "On this machine `finish` makes the closing
    commit itself, so pass it your paths instead of committing separately,"
-   and empty otherwise.
+   and empty otherwise. `{{TOOLING_RUNTIME}}` names the runtime the helpers
+   use and why (e.g. "Dependency-free Node, present on this Mac; chosen
+   independently of the product stack" or "None — Tier 1, hook is POSIX
+   sh").
 3. Tier ≥1: hook (§6.4), CI twin, tracked-file audit.
 4. Tier 2: helpers (§6.5–§6.11), one at a time, with tests.
 5. Run the acceptance scenarios for your tier and topology (§9).
@@ -308,8 +324,12 @@ exit 0
 ```
 
 File names containing newlines are unsupported. No bypass; the rulebook
-forbids `--no-verify`. Installation is idempotent and once per clone, or
-automatic via the hook manager.
+forbids `--no-verify`. Install by **reference**, never by copying: set
+`git config core.hooksPath .githooks` (idempotent, once per clone), or
+register the tracked hook through the project's hook manager. A copy in
+`.git/hooks/` silently stays old when the tracked hook changes. If a copy
+from an earlier install exists, leave it; it's inert once `core.hooksPath`
+is set.
 
 **CI twin.** Same matching over `git diff --name-only <base>...<head>`.
 
@@ -440,7 +460,10 @@ The lock is per machine. Clones never share it; there, git merge rules
   (missing, duplicated, extra, trailing whitespace); merge markers; a claim
   file that doesn't parse, whose `agent:` differs from its file name, or whose
   `paths:` is empty or `.`; a `todo:` that matches no open item; a
-  multi-line Recent activity item; a forbidden tracked file. Warns on:
+  multi-line Recent activity item; a forbidden tracked file; an invalid
+  pattern in `.agents/forbidden-paths` (fail closed, as every guard must);
+  an active pre-commit hook that isn't the tracked one (`core.hooksPath`
+  not `.githooks`, and no hook manager registered). Warns on:
   ledgers over `LEDGER_WARN_LINES`; claims not `live` per §7.5; directory
   claims at repo top level untouched for more than half the stale window.
   Fast enough to run every session start.
@@ -571,7 +594,8 @@ Agents doing long work without commits SHOULD `touch` at least every
 
 Run in scratch setups matching the topology (clones: two clones of a bare
 local remote; worktrees: two worktrees of one repo). Record pass / fail /
-not-applicable with the reason. At Tier 0, perform them by hand.
+not-applicable with the reason. At Tier 0, perform them by hand. Scratch
+simulations may cover every scenario except X1.
 
 **All tiers**
 - A1. `AGENTS.md` and shims exist; shims hold only import/pointer, identity,
@@ -587,6 +611,9 @@ not-applicable with the reason. At Tier 0, perform them by hand.
 - A5. `.agents/archive/README` is tracked; in clones, `.agents/claims/README`
   is tracked. No helper hard-codes a claims path; all use §6.1.
 - A6. On a fresh install, before any claim or rotation, `lint` exits zero.
+- A7. `git config core.hooksPath` is `.githooks` (or the hook manager runs
+  the tracked hook). Editing `.githooks/pre-commit` changes what the next
+  commit runs, with no re-install.
 
 **Tier ≥1**
 - G1. `git add -f data/a/b.txt` under a forbidden directory → blocked.
@@ -597,8 +624,20 @@ not-applicable with the reason. At Tier 0, perform them by hand.
   blocks through Git for Windows.
 - G6. A forbidden file tracked before the hook existed → audit fails, names it.
 - G7. Pattern file with CRLF endings still blocks.
-- G8. An invalid pattern (`(unclosed`) → every commit refused (fail closed).
+- G8. An invalid pattern (`(unclosed`) → every commit refused, and `lint`
+  exits non-zero naming the pattern file (fail closed everywhere).
 - G9. Hook with `set -e` added still allows clean commits and blocks bad ones.
+
+**All tiers — real agents**
+- X1. *Cross-agent smoke test.* Run by the actual agents, each in its own
+  runtime and sandbox — not simulated by one agent running two processes.
+  Agent A claims a small path and holds it. Agent B runs **status** and sees
+  A's claim; B's overlapping claim is refused naming A; B claims a disjoint
+  path, commits a brand-new file, and finishes. A runs **lint** and
+  **status**: both clean, B's Recent activity line present. A then finishes.
+  Repeat with roles swapped. At Tier 0/1, perform it by hand. X1 can't be
+  N/A: if an agent can't run it (for example its sandbox refuses writes to
+  the common dir), record FAIL with the error and add a blocker TODO.
 
 **Tier 2 — claims**
 - H1. A claims `src/`; B claims `src/parse.x` → refused naming A; B claims
@@ -627,7 +666,7 @@ not-applicable with the reason. At Tier 0, perform them by hand.
   has only B's paths (plus B's claim file in clones); `src/a` still staged.
 - H11. `commit` refuses `.`, a directory (claim-root message), a forbidden
   path, a nonexistent untracked path, and a reaped caller; allows deleting a
-  tracked file; updates `touched:`.
+  tracked file; commits a brand-new, never-tracked file; updates `touched:`.
 - H12. `commit` outside the claim → warning, proceeds.
 - H13. `block` → `blocker:` in claim; blocker item atop `Next`.
 - H14. `finish` over budget → oldest archived; items one line each.
@@ -659,13 +698,19 @@ not-applicable with the reason. At Tier 0, perform them by hand.
 - H20. *Lock, one machine:* two `finish` calls at once → both items present.
   Lock held by a live owner → second caller waits, then succeeds. Lock older
   than stale, two concurrent breakers → exactly one breaks it. Lock held past
-  `LOCK_WAIT_SECONDS` → refusal naming the owner.
+  `LOCK_WAIT_SECONDS` → refusal naming the owner. Every exit path from an
+  operation that holds the lock — success, refusal (e.g. a claim refused on
+  overlap, a `finish` whose commit the hook refuses), or error — leaves no
+  lock behind; the next operation acquires it immediately.
 - H21. *Clones, union file:* concurrent one-line Recent activity prepends →
   both intact.
 - H22. *Clones, non-union file:* concurrent multi-line CHANGELOG prepends →
   a conflict surfaces (not a silent splice); resolution per §6.12 keeps both
   entries whole. Rotate on one side vs a prepend on the other → merges
   cleanly, no archived entry resurrected, one pointer line.
+- (H21 and H22 test merge drivers, which behave the same whatever the
+  topology. On a single-machine topology, run them as two local branches
+  merged into one checkout.)
 - H23. `lint` flags merge markers, duplicated heading, heading with trailing
   whitespace, `claude.claim` containing `agent: codex`, a `todo:` with no
   match, a two-line Recent activity item; warns on a stale claim.
@@ -675,5 +720,8 @@ not-applicable with the reason. At Tier 0, perform them by hand.
 Report briefly: survey findings (agents, topology, branching, platforms,
 runtime); tier and why; files created or merged, flagging `.new` files;
 acceptance results including not-applicable rows and why; deferred work as
-TODO items; the once-per-clone setup step if any. Then finish your claim, add
-the CHANGELOG entry, and commit by exact paths.
+TODO items; the once-per-clone setup step if any; the per-agent write-access
+results from §3.10. The implementation is not complete until X1 has passed
+for every agent — if it couldn't be run yet, say so plainly and leave a TODO
+item for it at the top of `Next`. Then finish your claim, add the CHANGELOG
+entry, and commit by exact paths.

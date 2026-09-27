@@ -19,6 +19,8 @@ file natively load it through a shim ({{SHIM_FILES}}) that only adds identity.
 
 **Where work runs:** {{WORK_LOCATION_POLICY}}
 
+**Collaboration tooling runtime:** {{TOOLING_RUNTIME}}
+
 **Never commit:** anything matching `.agents/forbidden-paths`. To protect a new
 kind of path, add a pattern there (see its header) — every guard reads that
 file.

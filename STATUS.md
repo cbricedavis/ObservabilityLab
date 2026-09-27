@@ -28,6 +28,7 @@ user before touching. Live view: the resource probes in AGENTS.md §2.
   background jobs exist as of this framework's adoption).
 
 ## Recent activity
+- 2026-09-27T05:56Z — claude — **Update repo to amended agent-collab blueprint (hook via core.hooksPath, lint amendments, runtime note, X1 TODO).** Refreshed .agents/blueprint/, switched setup to core.hooksPath install, added the lint hook check, fixed the hook's missing +x bit, added the tooling-runtime note, and queued X1.
 - 2026-09-27T04:39Z — claude — **Implement the multi-agent collaboration system per agent-collab/BLUEPRINT.md.** Adopted Tier 2 multi-agent collaboration protocol (claude, codex; shared-tree; push=auto). (.agents/blueprint/BLUEPRINT.md §9-§10)
 
 Newest first; CHANGELOG.md holds the long arc.
