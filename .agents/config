@@ -1,0 +1,19 @@
+# .agents/config — read by collaboration tooling and by agents.
+# KEY = value. The value is everything after the first "=", trimmed, and may
+# contain spaces. Full-line comments only. Lists are space-separated names;
+# agent names match [a-z0-9][a-z0-9-]*. Meanings: BLUEPRINT §6.2.
+
+PROJECT_NAME = ObservabilityLab
+AGENTS = claude codex
+DEFAULT_AGENT = codex
+TOPOLOGY = shared-tree
+INTEGRATION_BRANCH = main
+PUSH_POLICY = auto
+
+RECENT_ACTIVITY_MAX = 10
+DONE_KEEP = 25
+CHANGELOG_KEEP = 20
+LEDGER_WARN_LINES = 400
+STALE_CLAIM_HOURS = 24
+LOCK_WAIT_SECONDS = 30
+LOCK_STALE_SECONDS = 120

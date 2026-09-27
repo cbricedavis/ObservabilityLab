@@ -1,0 +1,29 @@
+# .agents/forbidden-paths — never commit a path matching any line below.
+# Every guard (hook, CI, commit helper) reads this one file.
+#
+# One regex per line, matched against the repo-relative path with "/" separators
+# and no leading "./". Full-line comments only: a comment after a pattern
+# becomes part of the pattern.
+#
+# Portable subset only: literals, \. and other escaped punctuation, ^ $ . * + ?
+# ( | ) and bracket classes like [^/]. No \d \w \s, no [[:space:]], no
+# lookaround, no backreferences, no inline flags.
+#
+#   ^data/            a directory and everything under it
+#   \.parquet$        an extension
+#   (^|/)\.env$       a file name at any depth
+
+# --- secrets ---
+^\.secrets/
+(^|/)\.env$
+(^|/)\.env\.[^/]*local$
+\.pem$
+\.key$
+\.pfx$
+(^|/)id_(rsa|ed25519|ecdsa)$
+(^|/)credentials\.json$
+
+# --- local state ---
+^logs/
+
+# --- project-specific (from survey) ---

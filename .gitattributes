@@ -1,0 +1,15 @@
+# Attributes resolve per attribute and the last matching line wins, so
+# general globs come first and specific overrides last. Verify with
+#   git check-attr merge -- STATUS.md TODO.md
+# merge=union ONLY on files whose items are exactly one line (BLUEPRINT I11):
+# union merge splices concurrent multi-line entries.
+.agents/archive/*                   text eol=lf
+.agents/claims/*                    text eol=lf
+.githooks/*                         text eol=lf
+.agents/config                      text eol=lf
+.agents/forbidden-paths             text eol=lf
+AGENTS.md                           text eol=lf
+TODO.md                             text eol=lf
+CHANGELOG.md                        text eol=lf
+STATUS.md                           text eol=lf merge=union
+.agents/archive/recent-activity.md  text eol=lf merge=union

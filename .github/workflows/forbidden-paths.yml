@@ -1,0 +1,28 @@
+name: forbidden-paths
+
+# CI twin of .githooks/pre-commit (BLUEPRINT.md §6.4) plus the tracked-file
+# audit (§6.4): the hook only ever sees new commits, so a forbidden file
+# tracked before the hook existed would otherwise pass forever.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check forbidden paths (diff + tracked-file audit)
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            node .agents/bin/agents.mjs ci-guard --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.event.pull_request.head.sha }}"
+          else
+            node .agents/bin/agents.mjs ci-guard --base "${{ github.event.before }}" --head "${{ github.sha }}"
+          fi

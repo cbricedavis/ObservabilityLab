@@ -1,0 +1,3 @@
+Rotated ledger history, newest first. `finish` and `rotate` write here so the
+live ledgers stay short. Files appear on first rotation. Read only when you
+need history. Format: `.agents/blueprint/BLUEPRINT.md` §6.1.

@@ -1,0 +1,6 @@
+agent: {{AGENT}}
+since: {{NOW_UTC}}
+touched: {{NOW_UTC}}
+task: {{TASK}}
+todo: {{TODO_FIRST_LINE_OR_DASH}}
+paths: {{COMMA_SEPARATED_PATHS}}

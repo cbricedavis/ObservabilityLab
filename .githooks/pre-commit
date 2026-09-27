@@ -1,0 +1,26 @@
+#!/bin/sh
+# Blocks commits containing paths listed in .agents/forbidden-paths.
+# POSIX sh; needs only git, tr, grep, mktemp. Safe under `set -e`.
+# ([[:space:]] is fine here: the POSIX-class ban applies to patterns, not this script.)
+root=$(git rev-parse --show-toplevel) || exit 1
+pat="$root/.agents/forbidden-paths"
+[ -f "$pat" ] || exit 0
+clean=$(mktemp) || exit 1
+trap 'rm -f "$clean"' EXIT
+tr -d '\r' < "$pat" | grep -v -E '^[[:space:]]*(#|$)' > "$clean" || true
+[ -s "$clean" ] || exit 0
+icase=
+[ "$(git config --bool core.ignorecase)" = true ] && icase=-i
+rc=0
+hits=$(git -c core.quotePath=off diff --cached --name-only --diff-filter=ACMRT \
+       | grep -E $icase -f "$clean") || rc=$?
+if [ "$rc" -gt 1 ]; then
+  echo "pre-commit: .agents/forbidden-paths has an invalid pattern; refusing (fail closed)" >&2
+  exit 1
+fi
+if [ -n "$hits" ]; then
+  printf 'pre-commit: forbidden paths (.agents/forbidden-paths):\n%s\n' "$hits" >&2
+  printf 'unstage: git restore --staged -- <path>\n' >&2
+  exit 1
+fi
+exit 0

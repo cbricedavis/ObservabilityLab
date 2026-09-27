@@ -1,0 +1,5 @@
+Clones topology only. One file per agent holding a claim: `<agent>.claim`.
+The file exists only while the claim is held and is written only by its owner
+(or a reaper once it is stale). Format and protocol:
+`.agents/blueprint/BLUEPRINT.md` §6.1 and §7.3. Don't edit another agent's
+claim. (Single-machine setups keep claims in the git common dir instead.)
